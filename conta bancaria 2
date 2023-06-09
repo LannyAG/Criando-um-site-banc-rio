@@ -1,0 +1,168 @@
+
+
+
+import textwrap
+from abc import ABC, abstractclassmethod, abstractproperty
+from datetime import datetime
+
+
+class Cliente:
+    def __init__(self, endereco):
+        self.endereco = endereco
+        self.contas = []
+
+    def realizar_transacao(self, conta, transacao):
+        transacao.registrador(conta)
+
+    def adicionar_conta(self, conta):
+        self.contas.append(conta)
+
+
+class PessoaFisica(Cliente):
+    def __init__(self, nome, data_nascimento, cpf, endereco):
+        super().__init__(endereco)
+        self.nome = nome
+        self.data_nascimento = data_nascimento
+        self.cpf = cpf
+
+
+class Conta:
+    def __init__(self, numero, cliente):
+        self._saldo = 0
+        self._numero = numero
+        self._agencia = "0001"
+        self._cliente = cliente
+        self._historico = Historico()
+
+    @classmethod
+    def nova_conta(cls, cliente, numero):
+        return cls(numero, cliente)
+
+    @property
+    def saldo(self):
+        return self._saldo
+
+    @property
+    def numero(self):
+        return self._numero
+
+    @property
+    def agencia(self):
+        return self._agencia
+
+    @property
+    def cliente(self):
+        return self._cliente
+
+    @property
+    def historico(self):
+        return self._historico
+
+    def sacar(self, valor):
+        saldo = self.saldo
+        excedeu_saldo = valor > saldo
+
+        if excedeu_saldo:
+            print("\n@@@ Operação falhou! Você não tem saldo suficiente. @@@")
+        elif valor > 0:
+            self._saldo -= valor
+            print("\n=== Saque realizado com sucesso! ===")
+            return True
+        else:
+            print("\n@@@ Operação falhou! O valor informado é inválido. @@@")
+        return False
+
+    def depositar(self, valor):
+        if valor > 0:
+            self._saldo += valor
+            print("\n=== Depósito realizado com sucesso! ===")
+        else:
+            print("\n@@@ Operação falhou! O valor informado é inválido. @@@")
+            return False
+        return True
+
+
+class ContaCorrente(Conta):
+    def __init__(self, numero, cliente, limite=500, limite_saques=3):
+        super().__init__(numero, cliente)
+        self._limite = limite
+        self._limite_saques = limite_saques
+
+    def sacar(self, valor):
+        numero_saques = len(
+            [transacao for transacao in self.historico.transacoes if transacao["tipo"] == Saque.__name__]
+        )
+
+        excedeu_limite = valor > self._limite
+        excedeu_saques = numero_saques >= self._limite_saques
+
+        if excedeu_limite:
+            print("\n@@@ Operação falhou! O valor do saque excede o limite. @@@")
+        elif excedeu_saques:
+            print("\n@@@ Operação falhou! Número máximo de saques excedido. @@@")
+        else:
+            return super().sacar(valor)
+        return False
+
+    def __str__(self):
+        return f"""
+            Agência: \t {self.agencia}
+            C/C: \t \t {self.numero}
+            Titular: \t {self.cliente.nome}
+        """
+
+
+class Historico:
+    def __init__(self):
+        self.transacoes = []
+
+    def registrar(self, conta):
+        transacao = {
+            "data_hora": datetime.now(),
+            "conta": conta.numero,
+            "tipo": type(conta).__name__,
+        }
+        self.transacoes.append(transacao)
+
+    def exibir_transacoes(self):
+        print("\nHistórico de transações:")
+        for transacao in self.transacoes:
+            data_hora = transacao["data_hora"].strftime("%Y-%m-%d %H:%M:%S")
+            conta = transacao["conta"]
+            tipo = transacao["tipo"]
+            print(f"{data_hora} - Conta: {conta} - Tipo: {tipo}")
+
+
+# Função para criar um usuário
+def criar_usuario():
+    nome = input("Digite o nome do usuário: ")
+    data_nascimento = input("Digite a data de nascimento do usuário (dd/mm/aaaa): ")
+    cpf = input("Digite o CPF do usuário: ")
+    endereco = input("Digite o endereço do usuário: ")
+    return PessoaFisica(nome, data_nascimento, cpf, endereco)
+
+
+# Função para criar uma conta corrente
+def criar_conta_corrente(usuario):
+    numero_conta = input("Digite o número da conta corrente: ")
+    limite = float(input("Digite o limite da conta corrente: "))
+    limite_saques = int(input("Digite o limite de saques da conta corrente: "))
+    return ContaCorrente(numero_conta, usuario, limite, limite_saques)
+
+
+# Criação do usuário
+usuario = criar_usuario()
+
+# Criação da conta corrente
+conta_corrente = criar_conta_corrente(usuario)
+
+# Adicionar a conta corrente ao cliente
+usuario.adicionar_conta(conta_corrente)
+
+# Operações na conta corrente
+conta_corrente.depositar(1500)
+conta_corrente.sacar(200)
+conta_corrente.sacar(100)
+
+# Exibição do extrato
+conta_corrente.historico.exibir_transacoes()

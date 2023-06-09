@@ -1,0 +1,68 @@
+from datetime import datetime
+
+class Usuario:
+    def __init__(self, nome, cpf):
+        self.nome = nome
+        self.cpf = cpf
+
+class ContaBancaria:
+    def __init__(self, numero_conta, titular, saldo=0):
+        self.numero_conta = numero_conta
+        self.titular = titular
+        self.saldo = saldo
+        self.transacoes = []
+
+    def deposito(self, valor):
+        if valor >= 0:
+            self.saldo += valor
+            self.transacoes.append((datetime.now(), "Depósito", valor))
+            print("Depósito de R$", format(valor, ".2f"), "realizado com sucesso.")
+        else:
+            print("Valor inválido para depósito.")
+
+    def saque(self, valor):
+        if valor > 0:
+            if self.saldo >= valor:
+                self.saldo -= valor
+                self.transacoes.append((datetime.now(), "Saque", valor))
+                print("Saque de R$", format(valor, ".2f"), "realizado com sucesso.")
+            else:
+                print("Saldo insuficiente para saque.")
+        else:
+            print("Valor inválido para saque.")
+
+    def extrato(self):
+        print("Extrato bancário da conta:", self.numero_conta)
+        print("Beneficiário:", self.titular.nome)
+        print("CPF:", self.titular.cpf)
+        print("Saldo atual: R$", format(self.saldo, ".2f"))
+        print("Transações:")
+        for transacao in self.transacoes:
+            data_hora = transacao[0].strftime("%Y-%m-%d %H:%M:%S")
+            tipo = transacao[1]
+            valor = transacao[2]
+            print(f"{data_hora} - {tipo}: R$ {format(valor, '.2f')}")
+
+def criar_usuario():
+    nome = input("Digite o nome do usuário: ")
+    cpf = input("Digite o CPF do usuário: ")
+    return Usuario(nome, cpf)
+
+def criar_conta_corrente(usuario):
+    numero_conta = input("Digite o número da conta corrente: ")
+    saldo_inicial = float(input("Digite o saldo inicial da conta corrente: "))
+    return ContaBancaria(numero_conta, usuario, saldo_inicial)
+
+# Criação do usuário
+usuario = criar_usuario()
+
+# Criação da conta corrente
+conta = criar_conta_corrente(usuario)
+
+# Operações na conta corrente
+conta.deposito(1500)
+conta.saque(200)
+conta.saque(100)
+
+# Exibição do extrato
+conta.extrato()
